@@ -24,6 +24,15 @@ This repository implements a ROS2-based machine learning pipeline using Linear R
 3. The nodes will automatically handle data preprocessing, training, and testing.
 4. Outputs include trained models, metrics, and plots.
 
+## 📦 Requirements
+- rclpy
+- numpy
+- pandas
+- scikit-learn
+- matplotlib
+
+pip install -r requirements.txt
+
 ## 🚀 Usage Instructions
 
 ```bash
@@ -32,3 +41,6 @@ ros2 run <your_package> dataset_loader
 ros2 run <your_package> preprocessor
 ros2 run <your_package> model_training
 ros2 run <your_package> model_test
+
+
+
