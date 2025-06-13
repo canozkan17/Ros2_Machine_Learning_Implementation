@@ -7,6 +7,7 @@ import pandas as pd
 import pickle
 import os
 from sklearn.metrics import mean_absolute_error, r2_score
+import matplotlib.pyplot as plt
 
 
 class ModelTester(Node):
@@ -88,7 +89,52 @@ class ModelTester(Node):
             
             self.get_logger().info(f"Evaluation results saved for '{dataset_name}' at {model_path}")
 
-            
+            # Create output directory 
+            output_dir = f"/home/can_ozkan/ros2_ws/src/ros_ml_implementation/models/visuals"
+            os.makedirs(output_dir, exist_ok=True)
+
+            # Predicted vs Actual
+            plt.figure(figsize=(6,6))
+            plt.scatter(y_test, predictions, alpha=0.7)
+            plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--')
+            plt.xlabel("Actual")
+            plt.ylabel("Predicted")
+            plt.title(f"{dataset_name} - Predicted vs Actual")
+            plt.grid(True)
+            plt.savefig(f"{output_dir}/{dataset_name}_predicted_vs_actual.png")
+            plt.close()
+
+            # Residual plot
+            residuals = y_test - predictions
+            plt.figure(figsize=(6,4))
+            plt.scatter(predictions, residuals, alpha=0.7)
+            plt.axhline(0, color='red', linestyle='--')
+            plt.xlabel("Predicted")
+            plt.ylabel("Residuals")
+            plt.title(f"{dataset_name} - Residual Plot")
+            plt.grid(True)
+            plt.savefig(f"{output_dir}/{dataset_name}_residual_plot.png")
+            plt.close()
+
+            # Histogram of residuals
+            plt.figure(figsize=(6,4))
+            plt.hist(residuals, bins=30, edgecolor='black')
+            plt.title(f"{dataset_name} - Residual Histogram")
+            plt.xlabel("Residual")
+            plt.ylabel("Frequency")
+            plt.grid(True)
+            plt.savefig(f"{output_dir}/{dataset_name}_residual_hist.png")
+            plt.close()
+
+            # Optional: Line plot (if ordered data)
+            plt.figure(figsize=(10,4))
+            plt.plot(y_test, label='Actual')
+            plt.plot(predictions, label='Predicted')
+            plt.title(f"{dataset_name} - Actual vs Predicted (Ordered)")
+            plt.legend()
+            plt.grid(True)
+            plt.savefig(f"{output_dir}/{dataset_name}_line_plot.png")
+            plt.close()
             self.test_complete = True
 
         except Exception as e:
