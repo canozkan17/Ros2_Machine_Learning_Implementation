@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+
+"""
+ROS2 Node for testing a trained machine learning model.
+Receives test data, loads the trained model, evaluates predictions, and saves results/visualizations.
+Publishes acknowledgements to coordinate with other nodes.
+"""
+
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String, Bool
@@ -9,9 +16,13 @@ import os
 from sklearn.metrics import mean_absolute_error, r2_score
 import matplotlib.pyplot as plt
 
-
 class ModelTester(Node):
+    """ROS2 Node for testing a trained ML model and reporting results."""
+
     def __init__(self):
+        """
+        Initialize the ModelTester node, set up subscriptions and publishers.
+        """
         super().__init__('node_model_tester')
         self.subscription = self.create_subscription(
             String,
@@ -27,6 +38,9 @@ class ModelTester(Node):
         self.get_logger().info("Tester node initialized and listening on 'splitted_dataset'")
 
     def send_acknowledgement(self):
+        """
+        Publish an acknowledgement message to notify other nodes.
+        """
         ack_msg = String()  
         ack_msg.data = json.dumps({
                                 "sender": self.get_name(),
@@ -35,10 +49,16 @@ class ModelTester(Node):
         self.publisher_ack.publish(ack_msg)
     
     def recv_model_ready(self, msg: Bool):
+        """
+        Callback for receiving notification that the model is ready for testing.
+        """
         if msg.data:
             self.model_ready = True
 
     def listener_callback(self, msg: String):
+        """
+        Callback for receiving test data, loading the model, evaluating, and saving results.
+        """
         if not self.model_ready:
             return
         if self.test_complete:
@@ -78,9 +98,8 @@ class ModelTester(Node):
             mae = mean_absolute_error(y_test, predictions)
             r2 = r2_score(y_test, predictions)
 
-            
+            # Save evaluation results to a text file
             model_path = f"/home/can_ozkan/ros2_ws/src/ros_ml_implementation/models/{dataset_name}_LR_model_results.txt"
-            
             with open(model_path,"w") as file:
                 file.write(f"---RESULTS OF {dataset_name}_LR_model: ---\n")
                 file.write("\n---------------------")
@@ -89,11 +108,11 @@ class ModelTester(Node):
             
             self.get_logger().info(f"Evaluation results saved for '{dataset_name}' at {model_path}")
 
-            # Create output directory 
+            # Create output directory for plots
             output_dir = f"/home/can_ozkan/ros2_ws/src/ros_ml_implementation/models/visuals"
             os.makedirs(output_dir, exist_ok=True)
 
-            # Predicted vs Actual
+            # Predicted vs Actual plot
             plt.figure(figsize=(6,6))
             plt.scatter(y_test, predictions, alpha=0.7)
             plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--')
@@ -142,6 +161,9 @@ class ModelTester(Node):
 
 
 def main(args=None):
+    """
+    Main entry point for the ModelTester node.
+    """
     rclpy.init(args=args)
     node = ModelTester()
     rclpy.spin(node)

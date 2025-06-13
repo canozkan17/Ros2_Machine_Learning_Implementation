@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+
+"""
+ROS2 Node for loading a dataset from CSV, previewing it, and publishing as JSON.
+Publishes the raw dataset to the preprocessor node.
+"""
+
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -8,7 +14,12 @@ import io
 import json
 
 class Dataset_Loader(Node):
+    """ROS2 Node for loading and publishing datasets."""
+
     def __init__(self):
+        """
+        Initialize the Dataset_Loader node, set up publisher and timer.
+        """
         super().__init__("node_loader")
         self.publisher_ = self.create_publisher(String, "raw_dataset", 10)
         self.pose_subscriber_ack = self.create_subscription(String,"ack", self.recv_acknowledgement,10)
@@ -18,9 +29,13 @@ class Dataset_Loader(Node):
         self.printed = False
         self.combined_msg = None
 
+        # Prompt user for dataset name
         self.dataset_name = input("Enter the name of the dataset (without .csv): ").strip()
     
     def recv_acknowledgement(self, msg: String):
+        """
+        Callback for receiving acknowledgement from the preprocessor node.
+        """
         parsed = json.loads(msg.data)
         if parsed["sender"] == 'node_preprocessor':
             if parsed["data"]:
@@ -31,6 +46,9 @@ class Dataset_Loader(Node):
                 self.dataset_published = False
 
     def publishing(self, combined_msg):
+        """
+        Publish the loaded dataset as a JSON string.
+        """
         msg = String()
         msg.data = combined_msg
         self.publisher_.publish(msg)
@@ -38,13 +56,17 @@ class Dataset_Loader(Node):
             self.get_logger().info("Published dataset as JSON on 'raw_dataset'")
 
     def data_loading(self):
+        """
+        Timer callback for loading the dataset from CSV and publishing it.
+        Also writes a preview of the dataset to a text file.
+        """
         if self.dataset_published:
             self.publishing(self.combined_msg)
             return
             
         dataset_path = os.path.join(
             "/home/can_ozkan/ros2_ws/src/ros_ml_implementation/ros_ml_implementation/data/",
-            self.dataset_name + ".csv"
+            self.dataset_name + ".csv" 
         )
             
         try:
@@ -60,7 +82,7 @@ class Dataset_Loader(Node):
             self.publishing(self.combined_msg)
             
             if not self.printed:
-                # writing into a text file for clear reading
+                # Write a preview of the dataset to a text file for inspection
                 dataset_path = os.path.join(
                                             "/home/can_ozkan/ros2_ws/src/ros_ml_implementation/ros_ml_implementation/data/",
                                             self.dataset_name + "_preview.txt"
@@ -95,13 +117,14 @@ class Dataset_Loader(Node):
                     file.write(f"\n{self.dataset_name} Missing Values:\n")
                     file.write(df.isnull().sum().to_string() + '\n')
                 self.printed = True
-                
-                
 
         except Exception as e:
             self.get_logger().error(f"Failed to load dataset: {e}")
 
 def main(args=None):
+    """
+    Main entry point for the Dataset_Loader node.
+    """
     rclpy.init(args=args)
     node = Dataset_Loader()
     rclpy.spin(node)

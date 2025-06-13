@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+
+"""
+ROS2 Node for preprocessing raw datasets.
+Handles missing values, outlier capping, feature scaling, and train-test splitting.
+Publishes preprocessed data for model training.
+"""
+
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -8,9 +15,13 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import json
 
-
 class Preprocessor(Node):
+    """ROS2 Node for preprocessing datasets and publishing splits."""
+
     def __init__(self):
+        """
+        Initialize the Preprocessor node, set up subscriptions and publishers.
+        """
         super().__init__('node_preprocessor')
         self.subscription = self.create_subscription(String, 'raw_dataset', self.listener_callback, 10)
         self.publisher_ack = self.create_publisher(String, "ack", 10)
@@ -22,6 +33,9 @@ class Preprocessor(Node):
         self.current_dataset = ""
 
     def sent_acknowledgement(self):
+        """
+        Publish an acknowledgement message to the loader node.
+        """
         msg = String()  
         msg.data = json.dumps({
                                 "sender": self.get_name(),
@@ -30,6 +44,9 @@ class Preprocessor(Node):
         self.publisher_ack.publish(msg)
     
     def recv_acknowledgement(self, msg: String):
+        """
+        Callback for receiving acknowledgement from the trainer node.
+        """
         parsed = json.loads(msg.data)
         if parsed["sender"] == "node_model_trainer":
             if parsed["data"]:
@@ -40,6 +57,9 @@ class Preprocessor(Node):
                 self.splitted_dataset_published = False
 
     def publishing(self, payload):
+        """
+        Publish the preprocessed and split dataset.
+        """
         out_msg = String()
         out_msg.data = json.dumps(payload)
         self.publisher_splitted.publish(out_msg)
@@ -47,8 +67,10 @@ class Preprocessor(Node):
             self.get_logger().info(f"Published split dataset for '{self.current_dataset}'")
             self.splitted_dataset_published = True
 
-
     def listener_callback(self, msg: String):
+        """
+        Callback for receiving raw data, preprocessing, and publishing splits.
+        """
         if self.splitted_dataset_published:
             parsed_msg = json.loads(msg.data)
             if self.current_dataset == parsed_msg["dataset_name"]:
@@ -64,10 +86,11 @@ class Preprocessor(Node):
             self.get_logger().info(f"Received dataset '{dataset_name}' with shape: {df.shape}")
             self.sent_acknowledgement()
 
-            # Preprocessing
+            # Preprocessing: drop missing values
             df.dropna(inplace=True)
             self.get_logger().info(f"After dropping NaNs: {df.shape}")
 
+            # Cap outliers at 1st and 99th percentile for numerical columns
             numerical_cols = df.select_dtypes(include=[np.number]).columns
             for col in numerical_cols:
                 lower = df[col].quantile(0.01)
@@ -75,11 +98,12 @@ class Preprocessor(Node):
                 df[col] = df[col].clip(lower, upper)
             self.get_logger().info("Outliers capped at 1st and 99th percentile.")
 
+            # Standardize features
             scaler = StandardScaler()
             df[numerical_cols] = scaler.fit_transform(df[numerical_cols])
             self.get_logger().info("Features standardized.")
 
-            # Feature/label split based on dataset
+            # Feature/label split based on dataset name
             if dataset_name == "boston_housing":
                 X = df.drop(columns=["medv"])
                 y = df["medv"]
@@ -114,6 +138,9 @@ class Preprocessor(Node):
 
 
 def main(args=None):
+    """
+    Main entry point for the Preprocessor node.
+    """
     rclpy.init(args=args)
     node = Preprocessor()
     rclpy.spin(node)

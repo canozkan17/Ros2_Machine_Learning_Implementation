@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pkl
+*.log
+*.txt
+*.png
+models/
+ros_ml_implementation/data/*_preview.txt
+.env
+.vscode/
+.idea/
