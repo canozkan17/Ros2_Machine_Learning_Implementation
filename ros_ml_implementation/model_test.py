@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 import json
 import pandas as pd
 import pickle
@@ -18,12 +18,39 @@ class ModelTester(Node):
             self.listener_callback,
             10
         )
+        self.publisher_ack = self.create_publisher(String, "ack", 10)
+        self.pose_subscriber_model = self.create_subscription(Bool,"training_complete", self.recv_model_ready,10)
+        self.test_complete = False
+        self.model_ready = False
+        self.current_dataset = ""
         self.get_logger().info("Tester node initialized and listening on 'splitted_dataset'")
 
+    def send_acknowledgement(self):
+        ack_msg = String()  
+        ack_msg.data = json.dumps({
+                                "sender": self.get_name(),
+                                "data": True
+                            })
+        self.publisher_ack.publish(ack_msg)
+    
+    def recv_model_ready(self, msg: Bool):
+        if msg.data:
+            self.model_ready = True
+
     def listener_callback(self, msg: String):
+        if not self.model_ready:
+            return
+        if self.test_complete:
+            parsed_msg = json.loads(msg.data)
+            if self.current_dataset == parsed_msg["dataset_name"]:
+                self.send_acknowledgement() 
+                return
+            self.test_complete = False
+
         try:
             parsed_msg = json.loads(msg.data)
             dataset_name = parsed_msg["dataset_name"]
+            self.current_dataset = dataset_name
 
             self.get_logger().info(f"Received test data for dataset '{dataset_name}'")
 
@@ -36,6 +63,9 @@ class ModelTester(Node):
             if not os.path.exists(model_path):
                 self.get_logger().error(f"Model file not found at: {model_path}")
                 return
+            else:
+                self.get_logger().info(f"Received model '{dataset_name}_LR_model.pkl'")
+                self.send_acknowledgement() #informing training node that the model is retrieved
 
             with open(model_path, "rb") as f:
                 model = pickle.load(f)
@@ -47,9 +77,19 @@ class ModelTester(Node):
             mae = mean_absolute_error(y_test, predictions)
             r2 = r2_score(y_test, predictions)
 
-            self.get_logger().info(f"Evaluation results for '{dataset_name}':")
-            self.get_logger().info(f" - Mean Absolute Error (MAE): {mae:.4f}")
-            self.get_logger().info(f" - R² Score: {r2:.4f}")
+            
+            model_path = f"/home/can_ozkan/ros2_ws/src/ros_ml_implementation/models/{dataset_name}_LR_model_results.txt"
+            
+            with open(model_path,"w") as file:
+                file.write(f"---RESULTS OF {dataset_name}_LR_model: ---\n")
+                file.write("\n---------------------")
+                file.write(f"\n - Mean Absolute Error (MAE): {mae:.4f}")
+                file.write(f"\n - R² Score: {r2:.4f}")
+            
+            self.get_logger().info(f"Evaluation results saved for '{dataset_name}' at {model_path}")
+
+            
+            self.test_complete = True
 
         except Exception as e:
             self.get_logger().error(f"Error during model testing: {e}")

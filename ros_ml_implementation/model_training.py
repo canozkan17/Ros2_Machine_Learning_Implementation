@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 import json
 import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -18,12 +18,15 @@ class Trainer(Node):
                                                         self.listener_callback,
                                                         10
                                                     )
-        self.publisher_training = self.create_publisher(String, "training_complete", 10)
+        self.publisher_training = self.create_publisher(Bool, "training_complete", 10)
         self.publisher_ack = self.create_publisher(String, "ack", 10)
-        self.get_logger().info("Trainer node initialized and listening on 'splitted_dataset'")
+        self.pose_subscriber_ack = self.create_subscription(String,"ack", self.recv_acknowledgement,10)
         self.model_trained = False
+        self.current_dataset = ""
+        self.acknowledged = False
+        self.get_logger().info("Trainer node initialized and listening on 'splitted_dataset'")
         
-    def send_acknowledgement(self):
+    def send_acknowledgement(self): # to preprocessor node
         ack_msg = String()  
         ack_msg.data = json.dumps({
                                 "sender": self.get_name(),
@@ -32,20 +35,32 @@ class Trainer(Node):
         self.publisher_ack.publish(ack_msg)
 
 
-    def recv_acknowledgement(self, msg: String):
+    def recv_acknowledgement(self, msg: String): # receives from tester node
         parsed = json.loads(msg.data)
-        if parsed["sender"] == "---":
-            pass
-        # self.get_logger().info("Acklowledged= Trained model can be used")
+        if parsed["sender"] == "node_model_tester" and self.acknowledged != True:
+            self.get_logger().info("Acklowledged = Trained model can be used")
+            self.acknowledged = True
+            
     
-    
+    def training_complete_publishing(self):
+        out_msg = Bool()
+        out_msg.data = True 
+        self.publisher_training.publish(out_msg)
+        
+
     def listener_callback(self, msg):
-        if self.model_trained: 
-            return
+        if self.model_trained:
+            parsed_msg = json.loads(msg.data)
+            if self.current_dataset == parsed_msg["dataset_name"]:
+                self.training_complete_publishing() 
+                return
+            self.model_trained = False
+            self.acknowledged = False
 
         try:
             parsed_msg = json.loads(msg.data)
             dataset_name = parsed_msg["dataset_name"]
+            self.current_dataset = dataset_name
 
             # Deserialize data
             X_train = pd.read_json(parsed_msg["X_train"], orient='split')
@@ -73,8 +88,10 @@ class Trainer(Node):
 
             self.get_logger().info(f"Model training complete. Saved at '{model_path}'")
 
-            # Publish training completion acknowledgment
+            # Publish training completion acknowledgment 
             self.send_acknowledgement()
+            self.training_complete_publishing()
+            
 
         except Exception as e:
             self.get_logger().error(f"Error during model training: {e}")

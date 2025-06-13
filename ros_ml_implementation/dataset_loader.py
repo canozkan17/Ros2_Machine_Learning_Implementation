@@ -4,6 +4,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 import pandas as pd
 import os
+import io
 import json
 
 class Dataset_Loader(Node):
@@ -58,34 +59,44 @@ class Dataset_Loader(Node):
             
             self.publishing(self.combined_msg)
             
-            if not self.printed:            
-                print(f"\n ---PREVIEW OF {self.dataset_name}: ---")
-                # Display header and first few rows
-                print("\n---------------------")
-                print(f"{self.dataset_name} Data Columns:\n")
-                print(df.columns)
+            if not self.printed:
+                # writing into a text file for clear reading
+                dataset_path = os.path.join(
+                                            "/home/can_ozkan/ros2_ws/src/ros_ml_implementation/ros_ml_implementation/data/",
+                                            self.dataset_name + "_preview.txt"
+                                            )
+                with open(dataset_path, "w") as file:
 
-                # Display the first few rows of the dataset
-                print("\n---------------------")
-                (f"{self.dataset_name} Data Headers:\n")
-                print(df.head())
-                # Get basic information
-                print("\n---------------------")
-                print(f"{self.dataset_name} Basic Info:\n")
-                print(df.info())
+                    file.write(f"---PREVIEW OF {self.dataset_name}: ---\n")
+                    # Display header and first few rows
+                    file.write("\n---------------------")
+                    file.write(f"{self.dataset_name} Data Columns:\n")
+                    file.write(', '.join(df.columns) + '\n')
 
-                # Get statistical summary
-                print("\n---------------------")
-                print(f"{self.dataset_name} Statistic Summary:\n")
-                print(df.describe())
-                
-                # Check for missing values
-                print("\n---------------------")
-                print(f"{self.dataset_name} Missing Values:\n")
-                print(df.isnull().sum())
+                    # Display the first few rows of the dataset
+                    file.write("\n---------------------")
+                    (f"\n{self.dataset_name} Data Headers:\n")
+                    file.write(df.head().to_string() + '\n')
+
+                    # Get basic information
+                    file.write("\n---------------------")
+                    file.write(f"\n{self.dataset_name} Basic Info:\n")
+                    buffer = io.StringIO()
+                    df.info(buf=buffer)
+                    file.write(buffer.getvalue() + '\n')
+
+                    # Get statistical summary
+                    file.write("\n---------------------")
+                    file.write(f"\n{self.dataset_name} Statistic Summary:\n")
+                    file.write(df.describe().to_string() + '\n')
+                    
+                    # Check for missing values
+                    file.write("\n---------------------")
+                    file.write(f"\n{self.dataset_name} Missing Values:\n")
+                    file.write(df.isnull().sum().to_string() + '\n')
                 self.printed = True
                 
-                        
+                
 
         except Exception as e:
             self.get_logger().error(f"Failed to load dataset: {e}")

@@ -1,0 +1,5 @@
+---RESULTS OF human_brain_LR_model: ---
+
+---------------------
+ - Mean Absolute Error (MAE): 0.4587
+ - R² Score: 0.6997

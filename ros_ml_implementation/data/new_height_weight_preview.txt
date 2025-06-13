@@ -1,0 +1,41 @@
+---PREVIEW OF new_height_weight: ---
+
+---------------------new_height_weight Data Columns:
+Height, Weight
+
+---------------------      Height      Weight
+0  73.847017  241.893563
+1  68.781904  162.310473
+2  74.110105  212.740856
+3  71.730978  220.042470
+4  69.881796  206.349801
+
+---------------------
+new_height_weight Basic Info:
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 10000 entries, 0 to 9999
+Data columns (total 2 columns):
+ #   Column  Non-Null Count  Dtype  
+---  ------  --------------  -----  
+ 0   Height  10000 non-null  float64
+ 1   Weight  10000 non-null  float64
+dtypes: float64(2)
+memory usage: 156.4 KB
+
+
+---------------------
+new_height_weight Statistic Summary:
+             Height        Weight
+count  10000.000000  10000.000000
+mean      66.367560    161.440357
+std        3.847528     32.108439
+min       54.263133     64.700127
+25%       63.505620    135.818051
+50%       66.318070    161.212928
+75%       69.174262    187.169525
+max       78.998742    269.989699
+
+---------------------
+new_height_weight Missing Values:
+Height    0
+Weight    0

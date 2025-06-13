@@ -1,0 +1,5 @@
+---RESULTS OF boston_housing_LR_model: ---
+
+---------------------
+ - Mean Absolute Error (MAE): 0.3445
+ - R² Score: 0.6790

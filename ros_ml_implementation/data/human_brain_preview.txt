@@ -1,0 +1,41 @@
+---PREVIEW OF human_brain: ---
+
+---------------------human_brain Data Columns:
+Head Size(cm^3), Brain Weight(grams)
+
+---------------------   Head Size(cm^3)  Brain Weight(grams)
+0             4512                 1530
+1             3738                 1297
+2             4261                 1335
+3             3777                 1282
+4             4177                 1590
+
+---------------------
+human_brain Basic Info:
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 237 entries, 0 to 236
+Data columns (total 2 columns):
+ #   Column               Non-Null Count  Dtype
+---  ------               --------------  -----
+ 0   Head Size(cm^3)      237 non-null    int64
+ 1   Brain Weight(grams)  237 non-null    int64
+dtypes: int64(2)
+memory usage: 3.8 KB
+
+
+---------------------
+human_brain Statistic Summary:
+       Head Size(cm^3)  Brain Weight(grams)
+count       237.000000           237.000000
+mean       3633.991561          1282.873418
+std         365.261422           120.340446
+min        2720.000000           955.000000
+25%        3389.000000          1207.000000
+50%        3614.000000          1280.000000
+75%        3876.000000          1350.000000
+max        4747.000000          1635.000000
+
+---------------------
+human_brain Missing Values:
+Head Size(cm^3)        0
+Brain Weight(grams)    0

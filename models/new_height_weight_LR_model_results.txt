@@ -1,0 +1,5 @@
+---RESULTS OF new_height_weight_LR_model: ---
+
+---------------------
+ - Mean Absolute Error (MAE): 0.3001
+ - R² Score: 0.8581
